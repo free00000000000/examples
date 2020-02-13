@@ -16,6 +16,8 @@
 
 package org.tensorflow.lite.examples.detection;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -26,11 +28,17 @@ import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Message;
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
 import android.widget.Toast;
 import java.io.IOException;
+import java.security.CryptoPrimitive;
+import java.sql.ClientInfoStatus;
 import java.util.LinkedList;
 import java.util.List;
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
@@ -198,17 +206,45 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             final List<Classifier.Recognition> mappedRecognitions =
                 new LinkedList<Classifier.Recognition>();
 
+            // 顯示最中間的結果
+            Classifier.Recognition centerResult;
+            double minp = 300.0;
             for (final Classifier.Recognition result : results) {
               final RectF location = result.getLocation();
               if (location != null && result.getConfidence() >= minimumConfidence) {
-                canvas.drawRect(location, paint);
-
-                cropToFrameTransform.mapRect(location);
-
-                result.setLocation(location);
-                mappedRecognitions.add(result);
+                double p = Math.sqrt(Math.pow(location.centerX() - 150, 2) + Math.pow(location.centerY() - 150, 2));
+                if (p < minp) {
+                  minp = p;
+                  centerResult = result;
+                  if (mappedRecognitions.size() > 0) {
+                    ((LinkedList<Classifier.Recognition>) mappedRecognitions).remove(0);
+                  }
+                  canvas.drawRect(location, paint);
+                  cropToFrameTransform.mapRect(location);
+                  centerResult.setLocation(location);
+                  mappedRecognitions.add(centerResult);
+                  Log.d("test", centerResult.getTitle());
+                  Log.d("test", location.toString());
+                }
               }
             }
+
+//            for (final Classifier.Recognition result : results) {
+//              final RectF location = result.getLocation();
+//              if (location != null && result.getConfidence() >= minimumConfidence) {
+//                canvas.drawRect(location, paint);
+//                Log.d("test", Float.toString(location.centerX()));
+//                Log.d("test", Float.toString(location.centerY()));
+//
+//                cropToFrameTransform.mapRect(location);
+//
+//                result.setLocation(location);
+//                mappedRecognitions.add(result);
+//                Log.d("test", result.getTitle());
+//                Log.d("test", location.toString());
+//
+//              }
+//            }
 
             tracker.trackResults(mappedRecognitions, currTimestamp);
             trackingOverlay.postInvalidate();
@@ -222,6 +258,10 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     showFrameInfo(previewWidth + "x" + previewHeight);
                     showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
                     showInference(lastProcessingTimeMs + "ms");
+                    if (mappedRecognitions.size() > 0) {
+                      showLabel(mappedRecognitions.get(0).getTitle());
+                      showSelectLabel("");
+                    }
                   }
                 });
           }
