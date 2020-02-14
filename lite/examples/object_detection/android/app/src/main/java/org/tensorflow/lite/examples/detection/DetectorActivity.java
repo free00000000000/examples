@@ -25,6 +25,8 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
@@ -35,6 +37,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.Toast;
 import java.io.IOException;
 import java.security.CryptoPrimitive;
@@ -89,6 +92,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   private MultiBoxTracker tracker;
 
   private BorderedText borderedText;
+
+
 
   @Override
   public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -179,93 +184,145 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     if (SAVE_PREVIEW_BITMAP) {
       ImageUtils.saveBitmap(croppedBitmap);
     }
-
-    runInBackground(
-        new Runnable() {
-          @Override
-          public void run() {
-            LOGGER.i("Running detection on image " + currTimestamp);
-            final long startTime = SystemClock.uptimeMillis();
-            final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-
-            cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-            final Canvas canvas = new Canvas(cropCopyBitmap);
-            final Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Style.STROKE);
-            paint.setStrokeWidth(2.0f);
-
-            float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-            switch (MODE) {
-              case TF_OD_API:
-                minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                break;
-            }
-
-            final List<Classifier.Recognition> mappedRecognitions =
-                new LinkedList<Classifier.Recognition>();
-
-            // 顯示最中間的結果
-            Classifier.Recognition centerResult;
-            double minp = 300.0;
-            for (final Classifier.Recognition result : results) {
-              final RectF location = result.getLocation();
-              if (location != null && result.getConfidence() >= minimumConfidence) {
-                double p = Math.sqrt(Math.pow(location.centerX() - 150, 2) + Math.pow(location.centerY() - 150, 2));
-                if (p < minp) {
-                  minp = p;
-                  centerResult = result;
-                  if (mappedRecognitions.size() > 0) {
-                    ((LinkedList<Classifier.Recognition>) mappedRecognitions).remove(0);
-                  }
-                  canvas.drawRect(location, paint);
-                  cropToFrameTransform.mapRect(location);
-                  centerResult.setLocation(location);
-                  mappedRecognitions.add(centerResult);
-                  Log.d("test", centerResult.getTitle());
-                  Log.d("test", location.toString());
-                }
-              }
-            }
-
-//            for (final Classifier.Recognition result : results) {
-//              final RectF location = result.getLocation();
-//              if (location != null && result.getConfidence() >= minimumConfidence) {
-//                canvas.drawRect(location, paint);
-//                Log.d("test", Float.toString(location.centerX()));
-//                Log.d("test", Float.toString(location.centerY()));
+    Log.d("test", "=====================================");
+//    runInBackground(
+//        new Runnable() {
+//          @Override
+//          public void run() {
+//            Log.d("test", "rrrrrrrrrrrrrrrrrr");
+//            LOGGER.i("Running detection on image " + currTimestamp);
+//            final long startTime = SystemClock.uptimeMillis();
+////            final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+//            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 //
-//                cropToFrameTransform.mapRect(location);
+//            cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+//            final Canvas canvas = new Canvas(cropCopyBitmap);
+//            final Paint paint = new Paint();
+//            paint.setColor(Color.RED);
+//            paint.setStyle(Style.STROKE);
+//            paint.setStrokeWidth(2.0f);
 //
-//                result.setLocation(location);
-//                mappedRecognitions.add(result);
-//                Log.d("test", result.getTitle());
-//                Log.d("test", location.toString());
-//
-//              }
+//            float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+//            switch (MODE) {
+//              case TF_OD_API:
+//                minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+//                break;
 //            }
+//
+//            final List<Classifier.Recognition> mappedRecognitions =
+//                new LinkedList<Classifier.Recognition>();
+//
+////            // 顯示最中間的結果
+////            Classifier.Recognition centerResult;
+////            double minp = 300.0;
+////            for (final Classifier.Recognition result : results) {
+////              final RectF location = result.getLocation();
+////              if (location != null && result.getConfidence() >= minimumConfidence) {
+////                double p = Math.sqrt(Math.pow(location.centerX() - 150, 2) + Math.pow(location.centerY() - 150, 2));
+////                if (p < minp) {
+////                  minp = p;
+////                  centerResult = result;
+////                  if (mappedRecognitions.size() > 0) {
+////                    ((LinkedList<Classifier.Recognition>) mappedRecognitions).remove(0);
+////                  }
+////                  canvas.drawRect(location, paint);
+////                  cropToFrameTransform.mapRect(location);
+////                  centerResult.setLocation(location);
+////                  mappedRecognitions.add(centerResult);
+////                  Log.d("test", centerResult.getTitle());
+////                  Log.d("test", location.toString());
+////                }
+////              }
+////            }
+//            tracker.trackResults(Recognitions, currTimestamp);
+//            trackingOverlay.postInvalidate();
+//
+//            computingDetection = false;
+//
+////            runOnUiThread(
+////                new Runnable() {
+////                  @Override
+////                  public void run() {
+////
+////                    if (mappedRecognitions.size() > 0) {
+////                      showLabel(mappedRecognitions.get(0).getTitle());
+////                      showSelectLabel("");
+////                    }
+////                  }
+////                });
+//          }
+//        });
+  }
 
-            tracker.trackResults(mappedRecognitions, currTimestamp);
-            trackingOverlay.postInvalidate();
+  @Override
+  protected void detectImage() {
+    Log.d("test", "aaaaaaaa");
+    final long currTimestamp = timestamp;
+    trackingOverlay.postInvalidate();
 
-            computingDetection = false;
+    computingDetection = true;
+    LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
-            runOnUiThread(
-                new Runnable() {
-                  @Override
-                  public void run() {
-                    showFrameInfo(previewWidth + "x" + previewHeight);
-                    showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
-                    showInference(lastProcessingTimeMs + "ms");
-                    if (mappedRecognitions.size() > 0) {
-                      showLabel(mappedRecognitions.get(0).getTitle());
-                      showSelectLabel("");
-                    }
-                  }
-                });
-          }
-        });
+    rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
+
+    final Canvas canvas = new Canvas(croppedBitmap);
+    canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+    // For examining the actual TF input.
+    if (SAVE_PREVIEW_BITMAP) {
+      ImageUtils.saveBitmap(croppedBitmap);
+    }
+
+    final long startTime = SystemClock.uptimeMillis();
+    final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+    lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+
+    cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+    final Canvas canvas1 = new Canvas(cropCopyBitmap);
+    final Paint paint = new Paint();
+    paint.setColor(Color.RED);
+    paint.setStyle(Style.STROKE);
+    paint.setStrokeWidth(2.0f);
+
+    float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+    switch (MODE) {
+      case TF_OD_API:
+        minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+        break;
+    }
+
+    final List<Classifier.Recognition> mappedRecognitions =
+            new LinkedList<Classifier.Recognition>();
+
+    for (final Classifier.Recognition result : results) {
+      final RectF location = result.getLocation();
+      if (location != null && result.getConfidence() >= minimumConfidence) {
+        canvas1.drawRect(location, paint);
+        cropToFrameTransform.mapRect(location);
+        result.setLocation(location);
+        mappedRecognitions.add(result);
+        Log.d("test", result.getTitle());
+        Log.d("test", location.toString());
+      }
+    }
+    if (mappedRecognitions.size() > 0) {
+      noButton.setVisibility(View.VISIBLE);
+      yesButton.setVisibility(View.VISIBLE);
+      startButton.setVisibility(View.INVISIBLE);
+    }
+    tracker.trackResults(mappedRecognitions, currTimestamp);
+    trackingOverlay.postInvalidate();
+
+    computingDetection = false;
+    Recognitions = mappedRecognitions;
+
+  }
+
+  @Override
+  protected void clearDraw() {
+    final Canvas canvas2 = new Canvas(croppedBitmap);
+    canvas2.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+    tracker.trackResults(Recognitions, timestamp);
+    trackingOverlay.postInvalidate();
   }
 
   @Override
