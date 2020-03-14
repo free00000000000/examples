@@ -177,7 +177,10 @@ public abstract class CameraActivity extends AppCompatActivity
         previewHeight = previewSize.height;
         previewWidth = previewSize.width;
         rgbBytes = new int[previewWidth * previewHeight];
-        onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90);
+//        onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90);
+        onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 0);
+
+        LOGGER.i("gggggggggggggggggggggggggggggggg!@@@@@@@ %d %d", previewWidth, previewHeight);
       }
     } catch (final Exception e) {
       LOGGER.e(e, "Exception!");
@@ -423,6 +426,7 @@ public abstract class CameraActivity extends AppCompatActivity
                   previewHeight = size.getHeight();
                   previewWidth = size.getWidth();
                   CameraActivity.this.onPreviewSizeChosen(size, rotation);
+
                 }
               },
               this,
@@ -432,6 +436,7 @@ public abstract class CameraActivity extends AppCompatActivity
       camera2Fragment.setCamera(cameraId);
       fragment = camera2Fragment;
     } else {
+      LOGGER.i("***********************************else");
       fragment =
           new LegacyCameraConnectionFragment(this, getLayoutId(), getDesiredPreviewFrameSize());
     }

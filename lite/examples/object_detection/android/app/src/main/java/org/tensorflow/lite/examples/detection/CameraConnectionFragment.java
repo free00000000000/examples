@@ -355,7 +355,6 @@ public class CameraConnectionFragment extends Fragment {
           .show(getChildFragmentManager(), FRAGMENT_DIALOG);
       throw new RuntimeException(getString(R.string.camera_error));
     }
-
     cameraConnectionCallback.onPreviewSizeChosen(previewSize, sensorOrientation);
   }
 
